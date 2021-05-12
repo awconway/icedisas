@@ -1,12 +1,12 @@
-library(targets)
-library(tarchetypes)
+library(targets) # devtools::install_github("ropensci/targets")
 
 
 tar_option_set(
   packages = c(
     "tidyverse",
-    "icedisas",
-    "gtsummary"
+    "icedisas", # devtools::install_github("awconway/icedisas")
+    "gtsummary",
+    "gt"
   )
 )
 
@@ -20,10 +20,24 @@ list(
     select(everything(), -starts_with("screen")) %>%
     # P084 removed (procedure was not performed)
     filter(id != "P084")),
-  tar_target(data_isas, process_isas(data_label)),
   tar_target(
     data,
-    data_isas %>%
+    data_label %>%
+      rowwise() %>%
+      mutate(isas_mean = mean(c(
+        isasvomit,
+        isassameanesthetic,
+        isasitch,
+        isasrelaxed,
+        isaspain,
+        isassafe,
+        isastoocoldhot,
+        isassurgerypain,
+        isassatisfiedcare,
+        isasfeltgood,
+        isashurt
+      ), na.rm = TRUE)) %>%
+      ungroup() %>%
       select(
         id,
         age,
@@ -109,6 +123,6 @@ list(
   data = model_data
   )),
   tar_target(model_table, model %>%
-    tbl_regression(pvalue_fun = ~ style_pvalue(.x, digits = 2)) %>%
+    tbl_regression() %>%
     bold_p(t = 0.05))
 )
